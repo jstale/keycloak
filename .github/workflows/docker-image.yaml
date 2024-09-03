@@ -11,14 +11,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/github-script@v7.0.1
-      name: Build Keycloak
+    - name: Build Keycloak
+      uses: ./.github/actions/build-keycloak
       with:
-        working-directory: /keycloak/quarkus
-        script: |
-          mvn -f ../pom.xml clean install -DskipTestsuite -DskipExamples -DskipTests
-          cp ./dist/target/keycloak-25.0.4.tar.gz ./container
+        upload-m2-repo: false
+        upload-dist: true
+    - name: Copy Docker image
+      working-directory: ./quarkus
+      run: cp ./dist/target/keycloak-25.0.4.tar.gz ./container
     - name: Build the Docker image
+      working-directory: ./quarkus
       run: docker build --build-arg KEYCLOAK_DIST=keycloak-25.0.4.tar.gz -t jstale/keycloak:test .
       
     - name: Login to dockerhub
