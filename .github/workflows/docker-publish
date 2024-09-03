@@ -1,0 +1,30 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "vega/realease/25.0" ]
+  pull_request:
+    branches: [ "vega/realease/25.0" ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/github-script@v7.0.1
+      name: Build Keycloak
+      with:
+        working-directory: ./keycloak/quarkus
+        script: |
+          mvn -f ../pom.xml clean install -DskipTestsuite -DskipExamples -DskipTests
+          cp ./dist/target/keycloak-25.0.4.tar.gz ./container
+    - name: Build the Docker image
+      run: docker build --build-arg KEYCLOAK_DIST=keycloak-25.0.4.tar.gz -t jstale/keycloak:test .
+      
+    - name: Login to dockerhub
+      uses: docker/login-action@v3.3.0
+      with:
+       username: ${{ secrets.DOCKER_HUB_USERNAME }}
+       password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+    - name: Build the Docker image
+      run: docker push jstale/keycloak:test
+       
